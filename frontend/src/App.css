@@ -1,0 +1,91 @@
+/* App.css */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background: #f0f8ff;
+    text-align: center;
+  }
+  
+  .App {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  header h1 {
+    color: #007acc;
+  }
+  
+  .question {
+    font-size: 1.5em;
+    margin: 20px 0;
+  }
+  
+  .box {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin: 15px auto;
+    padding: 15px;
+    background: #fff;
+    width: 90%;
+  }
+  
+  button {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    border: none;
+    border-radius: 8px;
+    background: #007acc;
+    color: #fff;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+  }
+  
+  button:hover {
+    background: #005f99;
+  }
+  
+  footer {
+    margin-top: 30px;
+    font-size: 0.8em;
+    color: #555;
+  }
+  
+  .execute-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    pointer-events: auto;
+    width: auto;
+    height: auto;
+  }
+  
+  .execute-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    background-color: #4CAF50 !important;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: background-color 0.3s;
+    position: relative;
+    z-index: 9999;
+    pointer-events: auto;
+  }
+  
+  .execute-button:hover {
+    background-color: #45a049 !important;
+  }
+  
+  .execute-button:active {
+    transform: translateY(1px);
+  }
+  
