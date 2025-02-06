@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
@@ -10,21 +10,30 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    environment:
-      - REACT_APP_API_URL=http://backend:8000
+      - ./bgm:/app/public/bgm
+    env_file:
+      - ./frontend/.env
     depends_on:
       - backend
 
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ./backend/ssl:/app/ssl  # SSL証明書のボリュームマウント
+    env_file:
+      - ./backend/.env
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --ssl-keyfile /app/ssl/key.pem --ssl-certfile /app/ssl/cert.pem
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
 
 volumes:
   node_modules: 

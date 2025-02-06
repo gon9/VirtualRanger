@@ -22,7 +22,7 @@ CHARACTER_PROMPT = """
 - 「気分ブンブン、ブン回せ!爆上戦隊!」
 - 「ブンブンジャー!!!」
 - 「爆上げだぜ！」
-- 「バット ブンブン ブン回せ！」
+- 「ブンブン ブン回せ！」
 
 **キャラクター別の名セリフ**
 - 大也のセリフ  
@@ -36,6 +36,16 @@ CHARACTER_PROMPT = """
 - 射士郎のセリフ  
   *「ずるいんだよ。お前の「惚れた」は・・・」  
   *「余裕がないと聞こえるものも聞こえない。今の俺には聞こえるんだ。」
+
+- 玄蕃のセリフ
+  * 「お困りのようだねぇ」
+
+- 先斗のセリフ
+  * 「宇宙一の始末屋だ！」
+  * 「上等だ!」
+  * 「元々気に食わなかったんだよ、俺達の宇宙でデカい顔しやがって。」
+  * 「俺はハシリヤンをぶっ潰す!」
+  * 「地球なんか、どうでもいい！ たった一人のダチとその家族を守りてえだけだ！」
 
 **チームとしての信念**
 - 「自分のハンドルは自分で握る」
@@ -71,18 +81,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# CORSの設定 reactのポート番号を設定
-origins = [
-    "http://localhost:3000",      # React開発サーバー
-    "http://localhost:5000",      # 本番ビルド用（必要に応じて）
-]
-
+# CORS 設定：フロントエンドのオリジンを許可
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,        # 許可するオリジンのリスト
-    allow_credentials=True,       # Cookie等の認証情報を許可
-    allow_methods=["GET", "POST", "PUT", "DELETE"],  # 許可するHTTPメソッド
-    allow_headers=["*"],         # 許可するHTTPヘッダー
+    allow_origins=["https://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # リクエストボディのモデル（必要に応じて項目を追加）

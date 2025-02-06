@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 
 function App() {
@@ -6,31 +6,29 @@ function App() {
   const [aiResponse, setAiResponse] = useState('');
   const [isListening, setIsListening] = useState(false);
 
-  // ブラウザの SpeechRecognition（webkitSpeechRecognition 対応）
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-
-  // 利用可能なBGMのリスト
+  // BGM用のファイルリスト（ランダムに選択）
   const bgmList = [
-    '/bgm/bgm_01.m4a',
-    '/bgm/bgm_02.m4a',
-    '/bgm/bgm_03.m4a',
-    '/bgm/bgm_04.m4a',
-    '/bgm/bgm_05.m4a'
+    '/bgm/bgm_01.mp3',
+    '/bgm/bgm_02.mp3',
+    // '/bgm/bgm_03.mp3',
+    // '/bgm/bgm_04.mp3',
+    // '/bgm/bgm_05.mp3'
   ];
 
-  // ランダムなBGMを選択して再生する関数
+  // ランダムなBGMを返す関数
   const getRandomBgm = () => {
     if (bgmList.length === 0) return null;
     const randomIndex = Math.floor(Math.random() * bgmList.length);
-    const audio = new Audio(bgmList[randomIndex]);
-    audio.type = 'audio/m4a';
-    return audio;
+    return new Audio(bgmList[randomIndex]);
   };
+
+  // 音声認識の初期化
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
   const startRecognition = () => {
     if (!recognition) {
-      alert("お使いのブラウザは音声認識に対応していません。Chromeなど最新のブラウザをご利用ください。");
+      alert("お使いのブラウザは音声認識に対応していません。");
       return;
     }
     recognition.lang = 'ja-JP';
@@ -40,12 +38,12 @@ function App() {
     recognition.onresult = (event) => {
       const result = event.results[0][0].transcript;
       setTranscript(result);
-      // 音声認識完了後、バックエンド API を呼び出す
-      callLLMAPI(result);
+      // 音声認識に反応して生成開始
+      callGenerateAPI(result);
     };
 
-    recognition.onerror = (event) => {
-      console.error("Recognition error:", event.error);
+    recognition.onerror = (err) => {
+      console.error("音声認識エラー:", err);
     };
 
     recognition.onend = () => {
@@ -63,118 +61,74 @@ function App() {
     }
   };
 
-  const handleButtonClick = () => {
-    if (isListening) {
-      stopRecognition();
-    } else {
-      // 開始前に表示をリセット
-      setTranscript('');
-      setAiResponse('');
-      startRecognition();
-    }
-  };
+  // バックエンドURLの生成（環境変数がなければローカル開発としてポート8000を付与）
+  const hostname = window.location.hostname;
+  const backendUrl = process.env.REACT_APP_API_URL || `${window.location.protocol}//${hostname}:8000`;
 
-  // FastAPI バックエンドへのリクエスト（fetch を利用）
-  const callLLMAPI = async (input) => {
+  // 生成処理：音声認識の結果を受けてバックエンドAPIに送信
+  const callGenerateAPI = async (prompt) => {
     try {
-      const response = await fetch('http://localhost:8000/api/llm', {
+      const res = await fetch(`${backendUrl}/api/llm`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ prompt: input })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await res.json();
       setAiResponse(data.answer);
-      speak(data.answer);
+      // 生成完了：BGM再生 → 2秒後にセリフ発声
+      playBGMAndSpeech(data.answer);
     } catch (error) {
       console.error("API呼び出しエラー:", error);
-      setAiResponse("エラーが発生しました");
+      alert("エラーが発生しました");
     }
   };
 
-  // テキスト読み上げ（音声合成）
-  const speak = (text) => {
-    const synth = window.speechSynthesis;
-    if (synth) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
-      
-      // BGMの設定（存在する場合のみ）
-      const bgm = getRandomBgm();
-      if (bgm) {
-        bgm.loop = true;
-        bgm.volume = 0.3;
-        
-        // 読み上げ開始時にBGMを再生
-        utterance.onstart = () => {
-          bgm.play().catch(error => {
-            console.error('BGM再生エラー:', error);
-          });
-        };
-        
-        // 読み上げ終了時にBGMを停止
-        utterance.onend = () => {
-          bgm.pause();
-          bgm.currentTime = 0;
-        };
-
-        // エラー時のハンドリング
-        utterance.onerror = () => {
-          bgm.pause();
-          bgm.currentTime = 0;
-        };
+  const playBGMAndSpeech = (text) => {
+    const bgm = getRandomBgm();
+    if (bgm) {
+      bgm.volume = 0.3;
+      bgm.loop = true;
+      // 初回はミュート状態で自動再生（Chromeの自動再生制限対応）
+      bgm.muted = true;
+      const playPromise = bgm.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            // 再生開始後、2秒後にミュート解除しセリフ発声開始
+            setTimeout(() => {
+              bgm.muted = false;
+              // 発話終了時に BGM を停止する
+              speak(text, () => {
+                bgm.pause();
+                bgm.currentTime = 0;
+              });
+            }, 2000);
+          })
+          .catch((err) => console.error("BGM再生エラー:", err));
       }
-
-      synth.speak(utterance);
     }
   };
 
-  const handleExecuteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    callLLMAPI("こんにちは");
+  // 発話処理。第二引数に発話完了時のコールバックを指定可能
+  const speak = (text, onEndCallback = () => {}) => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    synth.cancel(); // 既存の発話をキャンセル
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    utterance.onend = onEndCallback;
+    synth.speak(utterance);
   };
 
   return (
-    <>
-      <div className="App">
-        <header>
-          <h1>バーチャルレンジャー</h1>
-        </header>
-        <main>
-          <p className="question">今日はなにして遊んだの？</p>
-
-          <div className="box">
-            <h2>あなたの発言</h2>
-            <p>{transcript || '（ここに音声認識結果が表示されます）'}</p>
-          </div>
-
-          <div className="box">
-            <h2>AIの返答</h2>
-            <p>{aiResponse || '（ここにAIの返答が表示されます）'}</p>
-          </div>
-
-          <button onClick={handleButtonClick}>
-            {isListening ? '停止' : '録音開始'}
-          </button>
-        </main>
-        <footer>
-          <p>&copy; 2025 バーチャルレンジャー</p>
-        </footer>
-      </div>
-      <div className="execute-container">
-        <button 
-          className="execute-button"
-          onClick={handleExecuteClick}
-        >
-          実行
-        </button>
-      </div>
-    </>
+    <div className="App">
+      <h1>バーチャルレンジャー</h1>
+      <p>あなたの発言: {transcript || '（ここに音声認識結果が表示されます）'}</p>
+      <p>AIの返答: {aiResponse || '（ここにAIの返答が表示されます）'}</p>
+      <button onClick={() => { isListening ? stopRecognition() : startRecognition(); }}>
+        {isListening ? '停止' : '音声認識開始'}
+      </button>
+    </div>
   );
 }
 
