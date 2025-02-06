@@ -24,10 +24,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - ./backend/ssl:/app/ssl  # SSL証明書のボリュームマウント
+      - ./backend/ssl:/app/ssl
     env_file:
       - ./backend/.env
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --ssl-keyfile /app/ssl/key.pem --ssl-certfile /app/ssl/cert.pem
     networks:
       - mynetwork
 

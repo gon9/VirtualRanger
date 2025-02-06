@@ -61,9 +61,11 @@ function App() {
     }
   };
 
-  // バックエンドURLの生成（環境変数がなければローカル開発としてポート8000を付与）
+  // フロントエンドからバックエンドへのアクセスURLを生成
+  const useSslBackend = process.env.REACT_APP_USE_SSL_BACKEND === 'true';
+  const backendProtocol = useSslBackend ? 'https:' : 'http:';
   const hostname = window.location.hostname;
-  const backendUrl = process.env.REACT_APP_API_URL || `${window.location.protocol}//${hostname}:8000`;
+  const backendUrl = process.env.REACT_APP_API_URL || `${backendProtocol}//${hostname}:8000`;
 
   // 生成処理：音声認識の結果を受けてバックエンドAPIに送信
   const callGenerateAPI = async (prompt) => {
