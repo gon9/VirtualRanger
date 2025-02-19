@@ -3,8 +3,18 @@ FROM python:3.13-slim-bookworm as builder
 
 WORKDIR /app
 
+ENV POETRY_HOME="/opt/poetry"
+
 # Poetryのインストール
-RUN pip install --no-cache-dir poetry
+# RUN pip install --no-cache-dir poetry
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL https://install.python-poetry.org | python3 - --version 2.1.0
+
+ENV PYTHONUNBUFFERED=1 \
+    # poetry home
+    PATH="$POETRY_HOME/bin:$PATH"
 
 # 依存関係のコピーとインストール
 COPY pyproject.toml poetry.lock ./
